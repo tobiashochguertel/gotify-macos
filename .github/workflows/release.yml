@@ -1,0 +1,158 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        type: string
+      release_notes:
+        description: 'Release notes'
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      tag_name: ${{ steps.create_release.outputs.tag_name }}
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Validate version format
+      run: |
+        if [[ ! "${{ github.event.inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "Error: Version must be in format vX.Y.Z (e.g., v1.0.0)"
+          exit 1
+        fi
+        
+    - name: Check if tag exists
+      run: |
+        if git tag -l | grep -q "^${{ github.event.inputs.version }}$"; then
+          echo "Error: Tag ${{ github.event.inputs.version }} already exists"
+          exit 1
+        fi
+        
+    - name: Create and push tag
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git tag -a ${{ github.event.inputs.version }} -m "Release ${{ github.event.inputs.version }}"
+        git push origin ${{ github.event.inputs.version }}
+        
+    - name: Generate release notes
+      id: generate_notes
+      run: |
+        if [ -n "${{ github.event.inputs.release_notes }}" ]; then
+          echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
+          echo "${{ github.event.inputs.release_notes }}" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+        else
+          # Generate automatic release notes from commits
+          LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then
+            echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
+            echo "## Changes since $LAST_TAG" >> $GITHUB_ENV
+            echo "" >> $GITHUB_ENV
+            git log --pretty=format:"* %s (%h)" $LAST_TAG..HEAD >> $GITHUB_ENV
+            echo "" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          else
+            echo "RELEASE_NOTES=Initial release" >> $GITHUB_ENV
+          fi
+        fi
+        
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.event.inputs.version }}
+        release_name: Release ${{ github.event.inputs.version }}
+        body: |
+          ${{ env.RELEASE_NOTES }}
+          
+          ## Installation
+          
+          ### Using go install
+          ```bash
+          go install github.com/tobiashochguertel/gotify-macos@${{ github.event.inputs.version }}
+          ```
+          
+          ### Download binary
+          Download the appropriate binary for your platform from the assets below.
+          
+        draft: false
+        prerelease: false
+
+  build-and-upload:
+    needs: create-release
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            asset_name: gotify-macos-linux-amd64
+          - os: ubuntu-latest
+            goos: linux
+            goarch: arm64
+            asset_name: gotify-macos-linux-arm64
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
+            asset_name: gotify-macos-windows-amd64.exe
+          - os: windows-latest
+            goos: windows
+            goarch: arm64
+            asset_name: gotify-macos-windows-arm64.exe
+          - os: macos-latest
+            goos: darwin
+            goarch: amd64
+            asset_name: gotify-macos-darwin-amd64
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+            asset_name: gotify-macos-darwin-arm64
+            
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.inputs.version }}
+        
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+        
+    - name: Download dependencies
+      run: go mod download
+      
+    - name: Build binary
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+      run: |
+        VERSION=${{ github.event.inputs.version }}
+        BUILD_TIME=$(date -u '+%Y-%m-%d_%H:%M:%S')
+        COMMIT=$(git rev-parse HEAD)
+        go build -ldflags "-X main.Version=$VERSION -X main.BuildTime=$BUILD_TIME -X main.Commit=$COMMIT" -o ${{ matrix.asset_name }} .
+        
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./${{ matrix.asset_name }}
+        asset_name: ${{ matrix.asset_name }}
+        asset_content_type: application/octet-stream

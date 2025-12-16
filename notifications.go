@@ -3,12 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
-	"github.com/haklop/gnotifier"
+	"github.com/gen2brain/beeep"
 )
 
 // TODO: Import these from gotify/server
@@ -31,10 +31,10 @@ type GotifyApplication struct {
 }
 
 func sendNotification(title string, message string) {
-	notification := gnotifier.Notification(title, message)
-	notification.GetConfig().Expiration = 2000
-	notification.GetConfig().ApplicationName = "Gotify"
-	notification.Push()
+	err := beeep.Notify(title, message, "")
+	if err != nil {
+		log.Printf("Failed to send notification: %v", err)
+	}
 }
 
 func GetAppIDs() []GotifyApplication {
@@ -45,7 +45,7 @@ func GetAppIDs() []GotifyApplication {
 		log.Print("Could not retrieve list of Gotify applications:", err)
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		log.Fatal("Invalid response for application list:", err)
 	}

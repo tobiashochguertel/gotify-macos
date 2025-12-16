@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -12,12 +13,32 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var addr = flag.String("host", "0.0.0.0:8080", "Gotify server address")
-var clientToken = flag.String("token", "", "Client token obtained from Gotify")
+var (
+	// Version information (set by build flags)
+	Version   = "dev"
+	BuildTime = "unknown"
+	Commit    = "unknown"
+	
+	// Command line flags
+	addr        = flag.String("host", "0.0.0.0:8080", "Gotify server address")
+	clientToken = flag.String("token", "", "Client token obtained from Gotify")
+	version     = flag.Bool("version", false, "Show version information")
+)
 
 func main() {
 	flag.Parse()
 	log.SetFlags(0)
+
+	if *version {
+		fmt.Printf("gotify-macos version %s\n", Version)
+		fmt.Printf("Built: %s\n", BuildTime)
+		fmt.Printf("Commit: %s\n", Commit)
+		return
+	}
+
+	if *clientToken == "" {
+		log.Fatal("Client token is required. Use --token flag to provide it.")
+	}
 
 	wsURL := url.URL{
 		Scheme: "ws",
