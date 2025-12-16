@@ -141,6 +141,7 @@ jobs:
       env:
         GOOS: ${{ matrix.goos }}
         GOARCH: ${{ matrix.goarch }}
+      shell: bash
       run: |
         VERSION=${{ github.event.inputs.version }}
         BUILD_TIME=$(date -u '+%Y-%m-%d_%H:%M:%S')
