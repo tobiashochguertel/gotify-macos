@@ -22,7 +22,7 @@ GOMOD=$(GOCMD) mod
 # Ldflags
 LDFLAGS=-ldflags "-X github.com/tobiashochguertel/gotify-macos/internal/config.Version=$(VERSION) -X github.com/tobiashochguertel/gotify-macos/internal/config.BuildTime=$(BUILD_TIME) -X github.com/tobiashochguertel/gotify-macos/internal/config.Commit=$(COMMIT)"
 
-.PHONY: all build clean test deps help test-cross-platform
+.PHONY: all build clean test deps help test-cross-platform test-workflows validate-workflows
 
 # Default target
 all: clean deps test build
@@ -71,6 +71,14 @@ run: build
 test-cross-platform:
 	./scripts/test-cross-platform.sh
 
+# Test GitHub Actions workflows locally using act
+test-workflows:
+	./scripts/test-workflows.sh
+
+# Quick workflow validation
+validate-workflows:
+	./scripts/test-workflows.sh validate
+
 # Show help
 help:
 	@echo "Available targets:"
@@ -81,6 +89,8 @@ help:
 	@echo "  clean             - Clean build directory"
 	@echo "  test              - Run unit tests"
 	@echo "  test-cross-platform - Test builds across platforms using Docker"
+	@echo "  test-workflows    - Test GitHub Actions workflows locally with act"
+	@echo "  validate-workflows - Validate workflow syntax"
 	@echo "  deps              - Download and tidy dependencies"
 	@echo "  run               - Build and run the application"
 	@echo "  help              - Show this help message"

@@ -41,5 +41,11 @@ Thumbs.db
 *.tmp
 *.temp
 
+# Act (local GitHub Actions runner)
+.env.act.local
+.secrets
+/tmp/artifacts
+.actrc.local
+
 # ignore copilot sessions
 copilot-session-*.md

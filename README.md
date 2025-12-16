@@ -71,6 +71,13 @@ make install
 gotify-macos --host=your-gotify-server.com:8080 --token=your-client-token
 ```
 
+### 🎯 Local GitHub Actions Testing (New!)
+**Stop the try-and-error cycle!** Test workflows locally before pushing:
+```bash
+make test-workflows          # Interactive testing menu
+make validate-workflows      # Quick syntax validation
+```
+
 ### Command Line Options
 
 - `--host`: Gotify server address (default: "0.0.0.0:8080")
@@ -113,6 +120,8 @@ make build                   # Build for current platform
 make build-all               # Build for all platforms  
 make test                    # Run unit tests
 make test-cross-platform     # Test builds using Docker
+make test-workflows          # Test GitHub Actions locally (no more try-and-error!)
+make validate-workflows      # Validate workflow syntax
 make clean                   # Clean build directory
 make deps                    # Download dependencies
 make install                 # Install using go install
@@ -136,6 +145,7 @@ make install                 # Install using go install
 - 📚 [Complete Documentation](docs/)
 - 🚀 [Getting Started Guide](docs/user-guide/getting-started.md)  
 - 🛠️ [Development Setup](docs/development/setup.md)
+- 🧪 [Local Workflow Testing](docs/development/workflow-testing.md) - **No more try-and-error!**
 - 🐳 [Docker Deployment](docs/deployment/docker.md)
 - 🤝 [Contributing Guide](docs/development/contributing.md)
 
