@@ -20,9 +20,9 @@ GOGET=$(GOCMD) get
 GOMOD=$(GOCMD) mod
 
 # Ldflags
-LDFLAGS=-ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME) -X main.Commit=$(COMMIT)"
+LDFLAGS=-ldflags "-X github.com/tobiashochguertel/gotify-macos/internal/config.Version=$(VERSION) -X github.com/tobiashochguertel/gotify-macos/internal/config.BuildTime=$(BUILD_TIME) -X github.com/tobiashochguertel/gotify-macos/internal/config.Commit=$(COMMIT)"
 
-.PHONY: all build clean test deps help
+.PHONY: all build clean test deps help test-cross-platform
 
 # Default target
 all: clean deps test build
@@ -30,24 +30,24 @@ all: clean deps test build
 # Build the binary
 build:
 	mkdir -p $(BUILD_DIR)
-	$(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) .
+	$(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/gotify-macos
 
 # Build for multiple platforms
 build-all: clean deps
 	mkdir -p $(BUILD_DIR)
 	# Windows
-	GOOS=windows GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe .
-	GOOS=windows GOARCH=arm64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-windows-arm64.exe .
+	GOOS=windows GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe ./cmd/gotify-macos
+	GOOS=windows GOARCH=arm64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-windows-arm64.exe ./cmd/gotify-macos
 	# macOS
-	GOOS=darwin GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 .
-	GOOS=darwin GOARCH=arm64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 .
+	GOOS=darwin GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 ./cmd/gotify-macos
+	GOOS=darwin GOARCH=arm64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 ./cmd/gotify-macos
 	# Linux
-	GOOS=linux GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 .
-	GOOS=linux GOARCH=arm64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 .
+	GOOS=linux GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 ./cmd/gotify-macos
+	GOOS=linux GOARCH=arm64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 ./cmd/gotify-macos
 
 # Install the binary
 install: deps
-	$(GOCMD) install $(LDFLAGS) .
+	$(GOCMD) install $(LDFLAGS) ./cmd/gotify-macos
 
 # Clean build directory
 clean:
@@ -67,15 +67,20 @@ deps:
 run: build
 	./$(BUILD_DIR)/$(BINARY_NAME)
 
+# Test cross-platform builds using Docker
+test-cross-platform:
+	./scripts/test-cross-platform.sh
+
 # Show help
 help:
 	@echo "Available targets:"
-	@echo "  all        - Clean, download deps, test, and build"
-	@echo "  build      - Build the binary for current platform"
-	@echo "  build-all  - Build binaries for all supported platforms"
-	@echo "  install    - Install using go install"
-	@echo "  clean      - Clean build directory"
-	@echo "  test       - Run tests"
-	@echo "  deps       - Download and tidy dependencies"
-	@echo "  run        - Build and run the application"
-	@echo "  help       - Show this help message"
+	@echo "  all               - Clean, download deps, test, and build"
+	@echo "  build             - Build the binary for current platform"
+	@echo "  build-all         - Build binaries for all supported platforms"
+	@echo "  install           - Install using go install"
+	@echo "  clean             - Clean build directory"
+	@echo "  test              - Run unit tests"
+	@echo "  test-cross-platform - Test builds across platforms using Docker"
+	@echo "  deps              - Download and tidy dependencies"
+	@echo "  run               - Build and run the application"
+	@echo "  help              - Show this help message"

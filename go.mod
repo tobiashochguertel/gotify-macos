@@ -1,10 +1,10 @@
 module github.com/tobiashochguertel/gotify-macos
 
-go 1.21
+go 1.23
 
 require (
-	github.com/gen2brain/beeep v0.0.0-20230907135156-1a38885a97fc
-	github.com/gorilla/websocket v1.5.1
+	github.com/gen2brain/beeep v0.0.0-20240516210008-9c006672e7f4
+	github.com/gorilla/websocket v1.5.3
 )
 
 require (
@@ -12,6 +12,5 @@ require (
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/tadvi/systray v0.0.0-20190226123456-11a2b8fa57af // indirect
-	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 )

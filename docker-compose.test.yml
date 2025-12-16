@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # Linux test environment
+  test-linux:
+    image: golang:1.23-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: >
+      sh -c "
+        apk add --no-cache make git &&
+        make deps &&
+        make test &&
+        make build &&
+        echo 'Linux build completed successfully!'
+      "
+    environment:
+      - CGO_ENABLED=0
+      - GOOS=linux
+      - GOARCH=amd64
+
+  # Linux ARM64 test environment
+  test-linux-arm64:
+    image: golang:1.23-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: >
+      sh -c "
+        apk add --no-cache make git &&
+        make deps &&
+        GOOS=linux GOARCH=arm64 go build -ldflags \"-X github.com/tobiashochguertel/gotify-macos/internal/config.Version=test -X github.com/tobiashochguertel/gotify-macos/internal/config.BuildTime=\$(date -u '+%Y-%m-%d_%H:%M:%S') -X github.com/tobiashochguertel/gotify-macos/internal/config.Commit=test\" -o bin/gotify-macos-linux-arm64-test ./cmd/gotify-macos &&
+        echo 'Linux ARM64 build completed successfully!'
+      "
+    environment:
+      - CGO_ENABLED=0
+
+  # Windows cross-compilation test
+  test-windows:
+    image: golang:1.23-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: >
+      sh -c "
+        apk add --no-cache make git &&
+        make deps &&
+        GOOS=windows GOARCH=amd64 go build -ldflags \"-X github.com/tobiashochguertel/gotify-macos/internal/config.Version=test -X github.com/tobiashochguertel/gotify-macos/internal/config.BuildTime=\$(date -u '+%Y-%m-%d_%H:%M:%S') -X github.com/tobiashochguertel/gotify-macos/internal/config.Commit=test\" -o bin/gotify-macos-windows-amd64-test.exe ./cmd/gotify-macos &&
+        echo 'Windows cross-compilation completed successfully!'
+      "
+    environment:
+      - CGO_ENABLED=0
+
+  # Test runner - runs all tests in parallel
+  test-all:
+    image: golang:1.23-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: >
+      sh -c "
+        apk add --no-cache make git &&
+        echo 'Running comprehensive tests...' &&
+        make deps &&
+        make test &&
+        echo 'Building for all platforms...' &&
+        make build-all &&
+        echo 'All tests and builds completed successfully!'
+      "
+    environment:
+      - CGO_ENABLED=0

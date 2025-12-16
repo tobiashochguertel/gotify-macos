@@ -105,23 +105,46 @@ gotify-macos --version
 
 ## Development
 
-### Available Make Targets
+### Development Commands
 
 ```bash
-make help          # Show available targets
-make build         # Build binary for current platform
-make build-all     # Build for all platforms
-make test          # Run tests
-make clean         # Clean build directory
-make deps          # Download dependencies
-make run           # Build and run
-make install       # Install using go install
+make help                    # Show all available targets
+make build                   # Build for current platform
+make build-all               # Build for all platforms  
+make test                    # Run unit tests
+make test-cross-platform     # Test builds using Docker
+make clean                   # Clean build directory
+make deps                    # Download dependencies
+make install                 # Install using go install
 ```
 
-### Dependencies
+### Project Structure
 
-- [gorilla/websocket](https://github.com/gorilla/websocket) - WebSocket client
+```
+├── cmd/gotify-macos/        # Main application
+├── internal/                # Private packages
+│   ├── config/             # Configuration management
+│   └── notification/       # Notification handling
+├── test/                   # Test files
+├── docs/                   # Documentation
+├── scripts/                # Build & development scripts
+└── bin/                    # Built binaries
+```
+
+## Documentation
+
+- 📚 [Complete Documentation](docs/)
+- 🚀 [Getting Started Guide](docs/user-guide/getting-started.md)  
+- 🛠️ [Development Setup](docs/development/setup.md)
+- 🐳 [Docker Deployment](docs/deployment/docker.md)
+- 🤝 [Contributing Guide](docs/development/contributing.md)
+
+## Dependencies
+
+- [gorilla/websocket v1.5.3](https://github.com/gorilla/websocket) - WebSocket client
 - [gen2brain/beeep](https://github.com/gen2brain/beeep) - Cross-platform notifications
+
+**Requirements:** Go 1.23+
 
 ### Testing
 

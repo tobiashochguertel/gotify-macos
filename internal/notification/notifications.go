@@ -1,4 +1,5 @@
-package main
+// Package notification provides cross-platform desktop notifications and Gotify message handling
+package notification
 
 import (
 	"encoding/json"
@@ -30,15 +31,17 @@ type GotifyApplication struct {
 	Image       string `json:"image"`
 }
 
-func sendNotification(title string, message string) {
+// SendNotification sends a desktop notification with the given title and message
+func SendNotification(title string, message string) {
 	err := beeep.Notify(title, message, "")
 	if err != nil {
 		log.Printf("Failed to send notification: %v", err)
 	}
 }
 
-func GetAppIDs() []GotifyApplication {
-	appEndpoint := fmt.Sprintf("http://%s/application?token=%s", *addr, *clientToken)
+// GetAppIDs retrieves the list of Gotify applications from the server
+func GetAppIDs(host, token string) []GotifyApplication {
+	appEndpoint := fmt.Sprintf("http://%s/application?token=%s", host, token)
 
 	res, err := http.Get(appEndpoint)
 	if err != nil {
@@ -57,6 +60,7 @@ func GetAppIDs() []GotifyApplication {
 	return apps
 }
 
+// ParseGotifyNotification reads and processes a Gotify notification from the websocket connection
 func ParseGotifyNotification(c *websocket.Conn) {
 	_, message, err := c.ReadMessage()
 	if err != nil {
@@ -68,5 +72,5 @@ func ParseGotifyNotification(c *websocket.Conn) {
 	if err := json.Unmarshal(message, &msg); err != nil {
 		panic("GotifyMessage: Failed to decode JSON")
 	}
-	sendNotification(msg.Title, msg.Message)
+	SendNotification(msg.Title, msg.Message)
 }

@@ -10,12 +10,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v6
       with:
-        go-version: '1.21'
+        go-version: '1.23'
         
     - name: Download dependencies
       run: go mod download
@@ -48,12 +48,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v6
       with:
-        go-version: '1.21'
+        go-version: '1.23'
         
     - name: Download dependencies
       run: go mod download
@@ -66,10 +66,10 @@ jobs:
         VERSION=$(git describe --tags --always --dirty)
         BUILD_TIME=$(date -u '+%Y-%m-%d_%H:%M:%S')
         COMMIT=$(git rev-parse HEAD)
-        go build -ldflags "-X main.Version=$VERSION -X main.BuildTime=$BUILD_TIME -X main.Commit=$COMMIT" -o ${{ matrix.asset_name }} .
+        go build -ldflags "-X github.com/tobiashochguertel/gotify-macos/internal/config.Version=$VERSION -X github.com/tobiashochguertel/gotify-macos/internal/config.BuildTime=$BUILD_TIME -X github.com/tobiashochguertel/gotify-macos/internal/config.Commit=$COMMIT" -o ${{ matrix.asset_name }} ./cmd/gotify-macos
         
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.asset_name }}
         path: ${{ matrix.asset_name }}

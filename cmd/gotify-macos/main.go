@@ -1,8 +1,6 @@
 package main
 
 import (
-	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -11,38 +9,25 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-)
-
-var (
-	// Version information (set by build flags)
-	Version   = "dev"
-	BuildTime = "unknown"
-	Commit    = "unknown"
-	
-	// Command line flags
-	addr        = flag.String("host", "0.0.0.0:8080", "Gotify server address")
-	clientToken = flag.String("token", "", "Client token obtained from Gotify")
-	version     = flag.Bool("version", false, "Show version information")
+	"github.com/tobiashochguertel/gotify-macos/internal/config"
+	"github.com/tobiashochguertel/gotify-macos/internal/notification"
 )
 
 func main() {
-	flag.Parse()
+	cfg := config.Parse()
 	log.SetFlags(0)
 
-	if *version {
-		fmt.Printf("gotify-macos version %s\n", Version)
-		fmt.Printf("Built: %s\n", BuildTime)
-		fmt.Printf("Commit: %s\n", Commit)
-		return
+	if cfg.ShowVersion {
+		cfg.ShowVersionInfo()
 	}
 
-	if *clientToken == "" {
-		log.Fatal("Client token is required. Use --token flag to provide it.")
+	if err := cfg.Validate(); err != nil {
+		log.Fatal(err)
 	}
 
 	wsURL := url.URL{
 		Scheme: "ws",
-		Host:   *addr,
+		Host:   cfg.Host,
 		Path:   "/stream",
 	}
 	log.Printf("Websocket: Connecting to %s ...", wsURL.String())
@@ -52,7 +37,7 @@ func main() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	c, _, err := websocket.DefaultDialer.Dial(wsURL.String(), http.Header{"X-Gotify-Key": []string{*clientToken}})
+	c, _, err := websocket.DefaultDialer.Dial(wsURL.String(), http.Header{"X-Gotify-Key": []string{cfg.Token}})
 	if err != nil {
 		log.Fatal("Websocket: failed to connect:", err)
 	}
@@ -65,7 +50,7 @@ func main() {
 	go func() {
 		defer close(done)
 		for {
-			ParseGotifyNotification(c)
+			notification.ParseGotifyNotification(c)
 		}
 	}()
 
