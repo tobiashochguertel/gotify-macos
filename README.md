@@ -18,12 +18,12 @@ A native macOS client for receiving [Gotify](https://gotify.net/) notifications 
 
 Install the latest version:
 ```bash
-go install github.com/tobiashochguertel/gotify-macos@latest
+go install github.com/tobiashochguertel/gotify-macos/cmd/gotify-macos@latest
 ```
 
 Install a specific version:
 ```bash
-go install github.com/tobiashochguertel/gotify-macos@v1.0.0
+go install github.com/tobiashochguertel/gotify-macos/cmd/gotify-macos@v1.0.0
 ```
 
 ### Download Binary
