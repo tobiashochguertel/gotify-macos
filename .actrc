@@ -1,6 +1,5 @@
-# act configuration file
-# This configures act to use medium-sized runners which have more tools
-# but still reasonable download size
+# act configuration file for Colima on Apple Silicon
+# This configures act to work with Colima Docker backend
 
 # Use medium runner by default (balance between size and tools)
 -P ubuntu-latest=catthehacker/ubuntu:act-latest
@@ -21,8 +20,11 @@
 # Set artifact server path for local testing
 --artifact-server-path /tmp/artifacts
 
-# Container architecture for Apple Silicon
+# Container architecture for Apple Silicon compatibility
 --container-architecture linux/amd64
 
-# Disable auth for local testing
---pull=false
+# Docker daemon socket for Colima compatibility
+--container-daemon-socket /Users/tobiashochguertel/.colima/docker/docker.sock
+
+# Network configuration for better Colima compatibility
+--use-gitignore=false

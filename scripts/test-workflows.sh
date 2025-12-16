@@ -72,6 +72,24 @@ list_workflows() {
 test_ci() {
     print_header "Testing CI Workflow"
     
+    # Check if we're on Apple Silicon with Colima
+    if [[ $(uname -m) == "arm64" ]] && [[ -n "$DOCKER_HOST" ]] && [[ "$DOCKER_HOST" == *"colima"* ]]; then
+        print_warning "Detected Apple Silicon with Colima - using compatible settings"
+        
+        # Test just syntax validation first
+        print_header "Testing workflow syntax (Apple Silicon + Colima)"
+        if act -j test --dryrun --container-architecture linux/amd64 2>/dev/null; then
+            print_success "Workflow syntax validation passed"
+        else
+            print_error "Workflow has syntax errors"
+            return 1
+        fi
+        
+        print_warning "Skipping full execution due to architecture compatibility issues"
+        print_warning "Use GitHub Actions for full cross-platform testing"
+        return 0
+    fi
+    
     # Test push event (most common trigger)
     if test_workflow "push" ".github/workflows/ci.yml" "CI Push Event"; then
         print_success "CI workflow test passed"
@@ -120,6 +138,15 @@ test_job() {
 show_menu() {
     echo ""
     print_header "Local Workflow Testing Menu"
+    
+    # Show environment info
+    if [[ $(uname -m) == "arm64" ]] && [[ -n "$DOCKER_HOST" ]] && [[ "$DOCKER_HOST" == *"colima"* ]]; then
+        print_warning "Environment: Apple Silicon + Colima (limited compatibility mode)"
+    else
+        echo "Environment: Standard Docker setup"
+    fi
+    
+    echo ""
     echo "1. List all workflows and jobs"
     echo "2. Test CI workflow (push event)"
     echo "3. Test Release workflow (workflow_dispatch)"
@@ -128,7 +155,8 @@ show_menu() {
     echo "6. Pull latest runner images"
     echo "7. Clean up artifacts and cache"
     echo "8. Show workflow syntax validation"
-    echo "9. Exit"
+    echo "9. Check Colima/Docker setup"
+    echo "10. Exit"
     echo ""
 }
 
@@ -136,19 +164,26 @@ show_menu() {
 validate_syntax() {
     print_header "Validating Workflow Syntax"
     
+    # Check environment and adjust accordingly
+    local extra_args=""
+    if [[ $(uname -m) == "arm64" ]] && [[ -n "$DOCKER_HOST" ]] && [[ "$DOCKER_HOST" == *"colima"* ]]; then
+        print_warning "Apple Silicon + Colima detected - using compatible validation"
+        extra_args="--container-architecture linux/amd64"
+    fi
+    
     local workflows_dir=".github/workflows"
     local valid=true
     
     for workflow in "$workflows_dir"/*.yml "$workflows_dir"/*.yaml; do
         if [[ -f "$workflow" ]]; then
             echo "Validating: $workflow"
-            if act -n -W "$workflow" &>/dev/null; then
+            if act --dryrun -W "$workflow" $extra_args &>/dev/null; then
                 print_success "✓ $workflow syntax is valid"
             else
                 print_error "✗ $workflow has syntax errors"
                 # Show the actual error
                 echo "Error details:"
-                act -n -W "$workflow" 2>&1 | head -5
+                act --dryrun -W "$workflow" $extra_args 2>&1 | head -5
                 valid=false
             fi
         fi
@@ -182,6 +217,64 @@ cleanup() {
     docker system prune -f --filter label=act
     
     print_success "Cleanup completed"
+}
+
+# Function to check Docker/Colima setup
+check_setup() {
+    print_header "Checking Docker/Colima Setup"
+    
+    # Check Docker availability
+    if ! command -v docker &> /dev/null; then
+        print_error "Docker is not installed"
+        return 1
+    fi
+    
+    # Check Docker daemon
+    if ! docker info &>/dev/null; then
+        print_error "Docker daemon is not running"
+        return 1
+    fi
+    
+    print_success "Docker daemon is running"
+    
+    # Check Docker host
+    echo "Docker Host: ${DOCKER_HOST:-default}"
+    
+    # Check if using Colima
+    if [[ -n "$DOCKER_HOST" ]] && [[ "$DOCKER_HOST" == *"colima"* ]]; then
+        print_warning "Using Colima Docker backend"
+        
+        # Check Colima status
+        if command -v colima &> /dev/null; then
+            echo "Colima status:"
+            colima status 2>/dev/null || echo "Colima not running or accessible"
+        fi
+        
+        # Check socket symlink
+        if [[ -L "/var/run/docker.sock" ]]; then
+            print_success "Docker socket symlink exists: $(readlink /var/run/docker.sock)"
+        else
+            print_warning "Docker socket symlink missing - may cause act issues"
+            echo "To fix: sudo ln -sf ~/.colima/docker/docker.sock /var/run/docker.sock"
+        fi
+        
+        # Check architecture
+        echo "System architecture: $(uname -m)"
+        if [[ $(uname -m) == "arm64" ]]; then
+            print_warning "Apple Silicon detected - some workflows may have compatibility issues"
+            echo "Recommendation: Use --container-architecture linux/amd64 with act"
+        fi
+    else
+        print_success "Using standard Docker setup"
+    fi
+    
+    # Check act version
+    if command -v act &> /dev/null; then
+        echo "Act version: $(act --version 2>/dev/null || echo 'unknown')"
+        print_success "Act is installed"
+    else
+        print_error "Act is not installed - install with: brew install act"
+    fi
 }
 
 # Handle command line arguments
@@ -251,11 +344,14 @@ case ${1:-menu} in
                     validate_syntax
                     ;;
                 9)
+                    check_setup
+                    ;;
+                10)
                     print_success "Goodbye!"
                     exit 0
                     ;;
                 *)
-                    print_error "Invalid option. Please choose 1-9."
+                    print_error "Invalid option. Please choose 1-10."
                     ;;
             esac
             
